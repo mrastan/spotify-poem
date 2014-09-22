@@ -3,42 +3,47 @@ import json
 import itertools
 import re
 
-# TODO 
-# check UTF
-# add testing 
-# is_same_track can be replaced by similarity function
-
 class SearchAPI(object):
     """ Simple search API for Spotify track metadata. """
 
     def __init__(self, base_url = 'http://ws.spotify.com/search/1/track.json'):
         self.base_url = base_url
+        self.cache = {}
     
     def search(self, query, page=1):
-        """ Queries API for track name and page number. Returns all 
-            matching tracks with accompanying metadata. 
-            """
+        """ Queries Spotify API for track name and page number. Returns all
+            matching tracks with accompanying metadata.
+        """
         params = {'q': query, 'page': page}
         r = requests.get(self.base_url, params=params)
         r.raise_for_status()
         return r.json()
     
-    def search_track(self, track_name, page_limit=1):
-        """ Finds track url that exactly matches the track name. """        
+    def find_track(self, track_name, page_limit=1):
+        """ Finds track_id with matching track_name. """
+        if not track_name: return None
+        is_same_track = lambda x, y: x.lower() == y.lower()
         tname = track_name.lower()
-        is_same_track = lambda x: x.lower() == tname
-        tracks = self.search(tname).get('tracks')
-        for track in tracks:
-            if is_same_track(track.get('name')):
-                track_href = track.get('href')
-                return track_href
+
+        track_id = self.cache.get(tname)
+        if track_id: 
+            return track_id
+
+        for page in range(1, page_limit + 1):
+            tracks = self.search(tname, page).get('tracks')
+            if not tracks:
+                break
+            for track in tracks:
+                if is_same_track(track.get('name'), tname):
+                    track_id = self.cache[tname] = track.get('href')
+                    return track_id
         return None
 
-    def search_tracks(self, track_names):
-        """ Finds multiple Spotify tracks. """
+    def find_tracks(self, track_names, page_limit=1):
+        """ Finds multiple tracks. Returns list of pairs (track_name, track_id). """
         results = []
         for track_name in track_names:
-            results.append((track_name, self.search_track(track_name)))
+            results.append((track_name, self.find_track(track_name, page_limit)))
         return results
 
 class PoemSentence:
@@ -47,6 +52,8 @@ class PoemSentence:
     def __init__(self, sentence):
         self.sentence = re.sub(r'[.,?!]', '', sentence)
         self.words = self.sentence.split()
+        self.best_result = []
+        self.best_score = 0
 
     def __str__(self):
         return self.sentence
@@ -62,6 +69,9 @@ class PoemSentence:
         
         return words_with_track/float(words_all)
 
+    def coverage(self):
+        return self.best_score
+
     def partitions(self):
         """Generator of all possible partitions of certain poem sentence."""
         ns = range(1, len(self.words)) 
@@ -74,10 +84,8 @@ class PoemSentence:
         if not api or not isinstance(api, SearchAPI):
             raise ValueError('API object required to spotifize sentence.')
 
-        self.best_result = []
-        self.best_score = 0
         for partition in self.partitions():
-            result = api.search_tracks(partition)
+            result = api.find_tracks(partition)
             score = self.__coverage(result)
 
             if score > self.best_score:
