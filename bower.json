@@ -1,0 +1,24 @@
+{
+  "name": "spotify-poem",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Michal Rachtan",
+      "email": "m.r45t4n@gmail.com"
+    }
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "components",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular":          "1.2.21",
+    "angular-animate":  "1.2.21",
+    "angular-route":    "1.2.21",
+    "bootstrap":        "~3.2.0"
+  }
+}
