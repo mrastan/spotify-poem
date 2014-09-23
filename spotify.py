@@ -47,7 +47,7 @@ class SearchAPI(object):
         return results
 
 class PoemSentence:
-    """Poem sentence that is going to be spotifized."""
+    """ A poem sentence. """
     
     def __init__(self, sentence):
         self.sentence = re.sub(r'[.,?!]', '', sentence)
@@ -59,6 +59,7 @@ class PoemSentence:
         return self.sentence
 
     def __coverage(self, result):
+        """ Calculates word coverage score for a result. Internal method. """
         words_all = len(self.words)
         words_with_track = 0
 
@@ -70,19 +71,20 @@ class PoemSentence:
         return words_with_track/float(words_all)
 
     def coverage(self):
+        """ Returns word coverage score for the sentence. """
         return self.best_score
 
     def partitions(self):
-        """Generator of all possible partitions of certain poem sentence."""
+        """ Generator of all possible partitions of the sentence. """
         ns = range(1, len(self.words)) 
         for n in ns: 
             for idxs in itertools.combinations(ns, n):
                 yield [' '.join(self.words[i:j]) for i, j in zip((0,) + idxs, idxs + (None,))]
     
     def spotifize(self, api):
-        """Converts a sentence to a list of Spolify tacks"""
+        """ Converts sentence to a list of Spolify tacks. """
         if not api or not isinstance(api, SearchAPI):
-            raise ValueError('API object required to spotifize sentence.')
+            raise ValueError('API instance is required to spotifize poem sentence.')
 
         for partition in self.partitions():
             result = api.find_tracks(partition)
@@ -96,14 +98,3 @@ class PoemSentence:
                 return self.best_result
         
         return self.best_result
-
-class Poem:
-    def __init__(self, poem):
-        self.sentences = re.split(r'[,.?!\n]\s*', poem)
-        
-    def spotifize(self, api):
-        if not api or not isinstance(api, SearchAPI):
-            raise ValueError('API object required to spotifize poem.')
-
-        result = map(lambda s: PoemSentence(s).spotifize(api), self.sentences)
-        return result
