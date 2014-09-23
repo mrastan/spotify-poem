@@ -55,7 +55,8 @@ class PoemSentence:
     """ A poem sentence. """
     
     def __init__(self, sentence):
-        self.sentence = re.sub(r'[.,?!]', '', sentence)
+        sentence_only_words = re.sub(r'[^\w\d\']', ' ', sentence, re.MULTILINE)
+        self.sentence = re.sub(r'\s+', ' ', sentence_only_words.strip())
         self.words = self.sentence.split()
         self.best_result = []
         self.best_score = 0
@@ -64,9 +65,11 @@ class PoemSentence:
         return self.sentence
 
     def __coverage(self, result):
-        """ Calculates word coverage (0.0 - 1.0) score for a result. Internal method. """
+        """ Calculates word coverage (0.0 - 1.0) score for result. Internal method. """
         
-        words_all = len(self.words)
+        words_count = len(self.words)
+        if words_count == 0: return 0
+
         words_with_track = 0
 
         for pair in result:
@@ -74,7 +77,7 @@ class PoemSentence:
             if not track == None:
                 words_with_track += len(phrase.split())
         
-        return words_with_track/float(words_all)
+        return words_with_track/float(words_count)
 
     def coverage(self):
         """ Returns word coverage score (0.0 - 1.0) for the sentence. """
@@ -84,16 +87,20 @@ class PoemSentence:
     def partitions(self):
         """ Generator of all possible partitions of the sentence. """
         
+        # first return full sentence 
+        yield [' '.join(self.words)]
+
+        # generate partitions
         ns = range(1, len(self.words)) 
         for n in ns: 
-            for break_idxs in list(itertools.combinations(ns, n)):
+            for break_idxs in itertools.combinations(ns, n):    # find where to break the sentence 
                 ranges = zip((0,) + break_idxs, break_idxs + (None,))
                 yield [' '.join(self.words[i:j]) for i, j in ranges]
     
-    def spotifize(self, api):
-        """ Converts sentence to a list of Spolify tacks. """
+    def spotifize(self, api, callback=None):
+        """ Converts sentence to a list of Spotify tacks. """
         
-        if not api or not isinstance(api, SearchAPI):
+        if not api:
             raise ValueError('API instance is required to spotifize poem sentence.')
 
         for partition in self.partitions():
@@ -103,6 +110,7 @@ class PoemSentence:
             if score > self.best_score:
                 self.best_score = score
                 self.best_result = result
+                if callback: callback(self.best_result)
 
             if score == 1.0:
                 return self.best_result
