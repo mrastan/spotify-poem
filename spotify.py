@@ -8,12 +8,15 @@ class SearchAPI(object):
 
     def __init__(self, base_url = 'http://ws.spotify.com/search/1/track.json'):
         self.base_url = base_url
-        self.cache = {}
+        self._cache = {}
+        self.is_same_track = lambda x, y: x.lower() == y.lower()
     
     def search(self, query, page=1):
         """ Queries Spotify API for track name and page number. Returns all
             matching tracks with accompanying metadata.
         """
+
+        if not query: return []
         params = {'q': query, 'page': page}
         r = requests.get(self.base_url, params=params)
         r.raise_for_status()
@@ -21,26 +24,28 @@ class SearchAPI(object):
     
     def find_track(self, track_name, page_limit=1):
         """ Finds track_id with matching track_name. """
+
         if not track_name: return None
-        is_same_track = lambda x, y: x.lower() == y.lower()
         tname = track_name.lower()
 
-        track_id = self.cache.get(tname)
-        if track_id: 
-            return track_id
+        if tname in self._cache:
+            return self._cache.get(tname)
 
         for page in range(1, page_limit + 1):
             tracks = self.search(tname, page).get('tracks')
             if not tracks:
                 break
             for track in tracks:
-                if is_same_track(track.get('name'), tname):
-                    track_id = self.cache[tname] = track.get('href')
+                if self.is_same_track(track.get('name'), tname):
+                    track_id = self._cache[tname] = track.get('href')
                     return track_id
+
+        self._cache[tname] = None
         return None
 
     def find_tracks(self, track_names, page_limit=1):
         """ Finds multiple tracks. Returns list of pairs (track_name, track_id). """
+
         results = []
         for track_name in track_names:
             results.append((track_name, self.find_track(track_name, page_limit)))
@@ -59,7 +64,8 @@ class PoemSentence:
         return self.sentence
 
     def __coverage(self, result):
-        """ Calculates word coverage score for a result. Internal method. """
+        """ Calculates word coverage (0.0 - 1.0) score for a result. Internal method. """
+        
         words_all = len(self.words)
         words_with_track = 0
 
@@ -71,18 +77,22 @@ class PoemSentence:
         return words_with_track/float(words_all)
 
     def coverage(self):
-        """ Returns word coverage score for the sentence. """
+        """ Returns word coverage score (0.0 - 1.0) for the sentence. """
+        
         return self.best_score
 
     def partitions(self):
         """ Generator of all possible partitions of the sentence. """
+        
         ns = range(1, len(self.words)) 
         for n in ns: 
-            for idxs in itertools.combinations(ns, n):
-                yield [' '.join(self.words[i:j]) for i, j in zip((0,) + idxs, idxs + (None,))]
+            for break_idxs in list(itertools.combinations(ns, n)):
+                ranges = zip((0,) + break_idxs, break_idxs + (None,))
+                yield [' '.join(self.words[i:j]) for i, j in ranges]
     
     def spotifize(self, api):
         """ Converts sentence to a list of Spolify tacks. """
+        
         if not api or not isinstance(api, SearchAPI):
             raise ValueError('API instance is required to spotifize poem sentence.')
 
