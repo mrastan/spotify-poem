@@ -1,0 +1,83 @@
+<html lang="en" ng-app="spotify-poem">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Spotify Poem</title>
+    <link rel="stylesheet" href="webapp/libs/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="webapp/libs/bootstrap/dist/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="webapp/libs/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/animation.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body ng-controller="PoemCtrl">
+<div>
+  <!--Navigation bar-->
+  <div class="navbar navbar-fixed-top navbar-shadow" role="navigation">
+      <div class="container">
+          <div class="navbar-header">
+              <a class="nav-brand" href="#">
+                Spotify Poem
+              </a>
+          </div>
+          <div class="navbar-collapse collapse">
+              <ul class="nav navbar-nav navbar-right">
+                  <li>
+                      <a href="https://github.com/mrastan/spotify-poem">About</a>
+                  </li>
+              </ul>
+          </div>
+      </div>
+  </div>  
+  <!--/Navigation bar-->
+
+  <!--Content-->
+  <div class="content">
+    <div class="container" role="main" id="wrap">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="poem-input">
+            <smart-textarea value="poem" timeout="600" placeholder="Write your poem..."/>
+          </div>
+
+          <div class="poem-examples" id="inspirations">
+            <h5>Inspirations:</h5>
+            <span ng-repeat="inspiration in inspirations">
+              <button class="btn btn-default btn-sm btn-outline" ng-click="pasteInspiration(inspiration)">
+                <span class="glyphicon glyphicon-star"></span>
+                {{inspiration.text | limitTo : 60}}...
+              </button>
+            </span>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="playlist">
+            <div ng-repeat="trackTuple in playlist" class="repeat-animation">
+                <song-box class="song-box" track-id="{{trackTuple[1]}}"></song-box>
+            </div>
+            <!-- <h5>Debug Area</h5> -->
+            <!-- <textarea rows="5" cols="70" ng-model="playlist_raw"></textarea> -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--/Content-->
+
+  <!--Footer-->
+  <div class="footer" >
+    <div class="container">
+      <div class="pull-right">powered by Spotify {{date | date:'yyyy'}}</div>
+    </div>
+  </div>
+  <!--/Footer-->
+</div>
+<script src="webapp/libs/jquery/dist/jquery.min.js"></script>
+<script src="webapp/libs/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="webapp/libs/angular/angular.min.js"></script>
+<script src="webapp/libs/angular-animate/angular-animate.min.js"></script>
+<script src="webapp/libs/angular-spotify/dist/angular-spotify.min.js"></script>
+<script src="webapp/js/song-box.js"></script>
+<script src="webapp/js/smart-textarea.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
